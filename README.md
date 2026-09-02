@@ -1,9 +1,11 @@
-# Lakbay.MockApi
+# Lakbay.SearchApi
 
-Disposable GraphQL + MongoDB backend for the Lakbay platform — the
-Sphinx-API/Mantincore pattern carried forward. Lets `Lakbay.Web` be built
-and tested before `Lakbay.Cms`/`Lakbay.Booking` exist. Dev/demo only,
-never deployed to production.
+A real, permanently deployed product-search service for the Lakbay
+platform — modeled on Hotelplan's `api-sphinx` (Manticore-backed search
+for price/availability/product filtering), using MongoDB in place of
+Manticore. **Not a mock** — see
+[ADR-0007](../Lakbay.Docs/docs/adr/ADR-0007-searchapi-is-real-not-mock.md)
+for why this repo was renamed from `Lakbay.MockApi` and what changed.
 
 **Stack:** ASP.NET Core + HotChocolate + MongoDB.Driver — same backend
 language as the rest of the platform. See

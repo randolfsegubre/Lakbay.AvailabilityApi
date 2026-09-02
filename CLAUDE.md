@@ -1,4 +1,4 @@
-# Lakbay.MockApi — Start Here
+# Lakbay.SearchApi — Start Here
 
 This file is intentionally short. It exists so any Claude Code session (or
 other AI coding assistant) rooted here auto-loads it and is pointed at the
@@ -7,43 +7,57 @@ real documentation before touching anything.
 **Read, in this order, before writing any code:**
 
 1. [../Lakbay.Docs/docs/01_CLAUDE.md](../Lakbay.Docs/docs/01_CLAUDE.md) —
-   the platform AI operating manual. Constitution for the whole Lakbay
-   estate; if anything else conflicts with it, it wins unless the user
-   explicitly overrides it in the current conversation.
-2. [../Lakbay.Docs/docs/02_BUILD_PLAN.md](../Lakbay.Docs/docs/02_BUILD_PLAN.md)
-   — **Phase 0** (scaffolding) and **Phase 1** (this repo's real work —
-   resolvers + seeded data, before `Lakbay.Web` or `Lakbay.Cms` exist in
-   any usable form) are this repo's phases.
-3. [../Lakbay.Docs/docs/04_TASKS.md](../Lakbay.Docs/docs/04_TASKS.md) —
+   the platform AI operating manual.
+2. [ADR-0007](../Lakbay.Docs/docs/adr/ADR-0007-searchapi-is-real-not-mock.md)
+   — **read this before assuming anything about this repo's scope.** It
+   used to be planned as a disposable mock (`Lakbay.MockApi`); it isn't
+   one. This is a real, permanently deployed search/query service modeled
+   on Hotelplan's `api-sphinx` (Manticore-backed), not a throwaway.
+3. [../Lakbay.Docs/docs/06_SYSTEM_ARCHITECTURE.md](../Lakbay.Docs/docs/06_SYSTEM_ARCHITECTURE.md)
+   — this repo's section covers its internal shape and exactly how it
+   fits the whole platform.
+4. [../Lakbay.Docs/docs/02_BUILD_PLAN.md](../Lakbay.Docs/docs/02_BUILD_PLAN.md)
+   — **Phase 0** (scaffolding), **Phase 1** (resolvers, seed data, and the
+   real sync mechanism from `Lakbay.Cms` — this is now genuine scope, not
+   a "just seed some fake data" step), and **Phase 5** (this repo goes
+   live alongside `Lakbay.Cms`/`Lakbay.Booking`, it does not get retired).
+5. [../Lakbay.Docs/docs/04_TASKS.md](../Lakbay.Docs/docs/04_TASKS.md) —
    current status across the whole platform.
-4. [ADR-0004](../Lakbay.Docs/docs/adr/ADR-0004-mockapi-dotnet-not-node.md)
-   — why this repo is ASP.NET Core + HotChocolate, not Node.js/Apollo
-   (that was the original plan; it changed 2026-09-05).
 
 ## What this repo is
 
-The Sphinx-API/Mantincore pattern, carried forward: a disposable
-**ASP.NET Core + HotChocolate + MongoDB.Driver** GraphQL service that
-mirrors the `Lakbay.Contracts` schema exactly. Its entire reason to exist
-is so `Lakbay.Web` can be built, tested, and demoed before `Lakbay.Cms`/
-`Lakbay.Booking` are ready. **Never deployed to production** — see
-`02_BUILD_PLAN.md` Phase 5.
+**ASP.NET Core + HotChocolate + MongoDB.Driver** (stack decided in
+ADR-0004, role corrected in ADR-0007). A dedicated, read-optimized product
+search service: it holds a denormalized copy of the catalog (holidays,
+product lines, destinations), built and indexed for fast faceted
+filtering — destination, theme, price, date — the way Hotelplan's
+`api-sphinx`/Manticore served that same need, rather than querying
+Umbraco's general-purpose content index directly for every storefront
+search.
 
-Same backend language as every other repo except `Lakbay.Web` (ADR-0004)
-— use `HotChocolate.Data.MongoDb` for querying, not a hand-rolled resolver
-layer, and reuse the same Repository/Dependency-Inversion shape documented
-in `03_ARCHITECTURE_AND_PATTERNS_GUIDE.md` rather than inventing a
-different pattern just because this service is "only a mock."
+`Lakbay.Cms` (Umbraco) stays the authoring source of truth. This repo is
+kept in sync **from** `Lakbay.Cms`, not the other way around — content
+editors never touch this repo or its data directly. The exact sync trigger
+(Umbraco event, Service Bus message, or scheduled job) is an open Phase 1
+decision — see `02_BUILD_PLAN.md`.
+
+`Lakbay.Web` queries this repo for catalog browsing, search, and
+filtering in production. It is **not** repointed away from once
+`Lakbay.Cms` exists — both stay in the picture, each doing a different
+job (see `06_SYSTEM_ARCHITECTURE.md`).
 
 **Non-negotiable:** CI runs a schema-diff check against
-`Lakbay.Contracts`' published SDL on every change. If this repo's schema
-and the real backend's schema silently drift apart, the entire point of
-building `Lakbay.Web` against this service first is defeated.
+`Lakbay.Contracts`' published SDL on every change — this keeps the search
+read-model's schema from silently drifting out of sync with
+`Lakbay.Cms`'s write-model schema.
 
-**Seed data must be real**, not lorem — at minimum one real destination
-per product line (Alon, Amihan, Parul, Pamana), sourced from the market
-research in the published Lakbay Blueprint artifact. This data will be
-visible in `Lakbay.Web`'s early screenshots and demos.
+**Two Service Bus subscriptions, not one:** `Lakbay.Cms` publish-sync
+(catalog/content changes) and, from Phase 4 onward, `Lakbay.Booking`'s
+`AvailabilityChanged` events. Both update this repo's MongoDB read model;
+both trigger the same Azure SignalR push-notification path afterward —
+see [ADR-0008](../Lakbay.Docs/docs/adr/ADR-0008-realtime-availability-propagation.md).
+This repo is the single place that knows the current read-model state and
+is responsible for telling connected browsers when it changes.
 
 ## Local setup
 
