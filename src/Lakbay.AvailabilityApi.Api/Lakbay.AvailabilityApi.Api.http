@@ -1,0 +1,8 @@
+@Lakbay.AvailabilityApi.Api_HostAddress = http://localhost:5000
+
+POST {{Lakbay.AvailabilityApi.Api_HostAddress}}/graphql
+Content-Type: application/json
+
+{"query":"{ status }"}
+
+###

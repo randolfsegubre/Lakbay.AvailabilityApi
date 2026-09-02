@@ -19,3 +19,8 @@ Thumbs.db
 ## Local secrets — never commit
 *.env
 .env.local
+local.settings.json
+
+## Azure Functions Core Tools local artifacts
+bin/**/WorkerExtensions/
+.azurefunctions/

@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Lakbay.AvailabilityApi.Api/Lakbay.AvailabilityApi.Api.csproj" />
+    <Project Path="src/Lakbay.AvailabilityApi.Sync/Lakbay.AvailabilityApi.Sync.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Lakbay.AvailabilityApi.Tests/Lakbay.AvailabilityApi.Tests.csproj" />
+  </Folder>
+  <Project Path="../Lakbay.Contracts/csharp/Lakbay.Contracts.csproj" />
+</Solution>
