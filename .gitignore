@@ -1,0 +1,21 @@
+## Node
+node_modules/
+npm-debug.log*
+dist/
+
+## Env / secrets — never commit
+.env
+.env.local
+
+## Local Mongo data (Docker volume mounts, if any land in-repo)
+data/
+
+## Testing
+coverage/
+
+## OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/*
+!.vscode/extensions.json
