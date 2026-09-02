@@ -40,6 +40,19 @@ dotnet run --project src/Lakbay.AvailabilityApi.Api
 # → {"data":{"status":"ok"}}
 ```
 
+**CORS:** `Lakbay.Web` calls this API cross-origin in local dev
+(`localhost:3000` → `localhost:5000`). The allowed origin list comes from
+`Cors:AllowedOrigins` in config — `appsettings.Development.json` sets it
+to `["http://localhost:3000"]`. Run with `ASPNETCORE_ENVIRONMENT=Development`
+(not the default when using `dotnet run --no-launch-profile`) or that
+config won't load and the browser preflight will 404.
+
+**Verified end-to-end, 2026-09-06:** ran this API on `:5000` and
+`Lakbay.Web`'s dev server on `:3000` simultaneously; the homepage's
+`useGetStatusQuery()` call successfully round-tripped through RTK Query →
+this API's `{ status }` field and rendered "Lakbay.AvailabilityApi says:
+ok" in the browser.
+
 `Lakbay.AvailabilityApi.Sync` builds but has no functions defined yet —
 running it (`func start`, once Azure Functions Core Tools is installed —
 not present on this machine as of 2026-09-06) would boot successfully but

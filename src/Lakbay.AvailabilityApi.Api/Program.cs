@@ -12,7 +12,25 @@ builder.Services
     .AddGraphQLServer()
     .AddQueryType<Query>();
 
+// Lakbay.Web calls this API cross-origin (localhost:3000 -> localhost:5000
+// in dev; different subdomains/hosts in every real environment). The
+// allowed origin list comes from config so it's not hard-coded per
+// environment — see appsettings.Development.json for the local default.
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? [];
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
+
 var app = builder.Build();
+
+app.UseCors();
 
 app.MapGraphQL();
 
