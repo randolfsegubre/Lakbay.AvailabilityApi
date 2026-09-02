@@ -19,6 +19,9 @@ sync/write load. See
 and [ADR-0010](../Lakbay.Docs/docs/adr/ADR-0010-last-write-wins-sync.md)
 (last-write-wins ordering for the sync side).
 
-Not yet scaffolded — see [CLAUDE.md](CLAUDE.md) and
+Phase 0 scaffolding is done (both projects boot, tests green, verified
+end-to-end against `Lakbay.Web`) — see
+[Docs/DEVELOPER_HANDBOOK.md](Docs/DEVELOPER_HANDBOOK.md) for proven local
+setup, and [CLAUDE.md](CLAUDE.md) /
 [../Lakbay.Docs/docs/02_BUILD_PLAN.md](../Lakbay.Docs/docs/02_BUILD_PLAN.md)
-(Phase 0, then Phase 1) for what happens next.
+(Phase 1) for what's next.
