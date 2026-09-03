@@ -19,9 +19,15 @@ sync/write load. See
 and [ADR-0010](../Lakbay.Docs/docs/adr/ADR-0010-last-write-wins-sync.md)
 (last-write-wins ordering for the sync side).
 
-Phase 0 scaffolding is done (both projects boot, tests green, verified
-end-to-end against `Lakbay.Web`) — see
+**Phase 1 is done for the query API**: real `productLines`/`destinations`/
+`products`/`product` resolvers against a live MongoDB, seeded with real
+Philippine destinations and products (Coron, Baguio, San Fernando
+Pampanga, Vigan — one per product line), 7 passing tests against a real
+Testcontainers-managed database. `Lakbay.AvailabilityApi.Sync` still has
+no functions defined — that's correct until Phase 4. See
 [Docs/DEVELOPER_HANDBOOK.md](Docs/DEVELOPER_HANDBOOK.md) for proven local
-setup, and [CLAUDE.md](CLAUDE.md) /
+setup (including a real gotcha hit and fixed along the way), and
+[CLAUDE.md](CLAUDE.md) /
 [../Lakbay.Docs/docs/02_BUILD_PLAN.md](../Lakbay.Docs/docs/02_BUILD_PLAN.md)
-(Phase 1) for what's next.
+for what's next (Phase 2 — `Lakbay.Web` building its catalog UI against
+this).

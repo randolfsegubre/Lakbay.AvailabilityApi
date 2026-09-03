@@ -1,13 +1,23 @@
 using Lakbay.AvailabilityApi.Api;
+using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Phase 0: HotChocolate boots and introspection works. Real resolvers
-// against MongoDB (Product, ProductLine, Destination — matching
-// Lakbay.Contracts' schema) land in Phase 1. This project contains no
-// Service Bus code and never will — event consumption lives entirely in
-// the sibling Lakbay.AvailabilityApi.Sync Azure Function (ADR-0009), so
+// Phase 1: real resolvers against MongoDB (Product, ProductLine,
+// Destination — matching Lakbay.Contracts' schema). This project contains
+// no Service Bus code and never will — event consumption lives entirely
+// in the sibling Lakbay.AvailabilityApi.Sync Azure Function (ADR-0009), so
 // a burst of availability events never competes with queries here.
+MongoClassMaps.Register();
+
+var mongoSettings = builder.Configuration.GetSection("Mongo").Get<MongoDbSettings>()
+    ?? throw new InvalidOperationException(
+        "Missing \"Mongo\" configuration section (ConnectionString, DatabaseName) — see appsettings.Development.json.");
+
+builder.Services.AddSingleton<IMongoClient>(_ => new MongoClient(mongoSettings.ConnectionString));
+builder.Services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(mongoSettings.DatabaseName));
+builder.Services.AddSingleton<CatalogContext>();
+
 builder.Services
     .AddGraphQLServer()
     .AddQueryType<Query>();
@@ -31,6 +41,8 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseCors();
+
+await CatalogSeeder.SeedIfEmptyAsync(app.Services.GetRequiredService<CatalogContext>());
 
 app.MapGraphQL();
 

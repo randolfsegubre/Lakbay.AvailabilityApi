@@ -24,3 +24,6 @@ local.settings.json
 ## Azure Functions Core Tools local artifacts
 bin/**/WorkerExtensions/
 .azurefunctions/
+
+## Runtime log from a backgrounded `dotnet run` — never committed
+.run.log

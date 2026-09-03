@@ -1,0 +1,23 @@
+services:
+  # MongoDB for local dev (Phase 1). No auth — this is a local-only,
+  # no-secret-to-protect setup, unlike Lakbay.Cms's SQL Server compose
+  # (which has a real SA password and therefore uses .env + user-secrets).
+  # The app itself never runs in this compose file, same as every other
+  # compose file in this platform — native `dotnet run` for fast hot
+  # reload, this container is the database only.
+  mongo:
+    image: mongo:8
+    container_name: lakbay_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - lakbay_mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  lakbay_mongo_data:
