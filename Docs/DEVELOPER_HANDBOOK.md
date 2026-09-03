@@ -63,6 +63,28 @@ curl -s http://localhost:5170/graphql -H "Content-Type: application/json" \
 #   correctly excludes anything below the price floor
 ```
 
+**A second real gotcha, found only once a real client used it (2026-09-08):**
+`products(filter: $filter)` worked fine in every manual `curl` test in
+this handbook — because they all pass `filter` as an **inline literal**
+(`products(filter: { productLine: AMIHAN, ... })`), which never triggers
+GraphQL's variable-type-matching validation. The moment `Lakbay.Web` sent
+it as a proper `$filter: ProductFilter` variable (the way a real client
+should), it failed: `"The variable 'filter' is not compatible with the
+type of the current location"`. HotChocolate's default naming convention
+had named the input type `ProductFilterInput` (appending "Input" to any
+inferred input object), not `ProductFilter` as `Lakbay.Contracts`' schema
+declares. Fixed with an explicit type descriptor — `ProductFilterInputType
+: InputObjectType<ProductFilter>` overriding `Name("ProductFilter")`,
+registered via `.AddType<ProductFilterInputType>()` in `Program.cs` — the
+same Adapter shape as `MongoClassMaps`, adjusting how this repo exposes a
+`Lakbay.Contracts` type without putting a HotChocolate attribute on the
+shared type itself. A regression test
+(`Products_filter_works_as_a_real_graphql_variable_not_just_an_inline_literal`)
+now exercises the real variable path specifically, since none of the
+others did. **The lesson that generalizes:** a query that works via inline
+literals is not proof a client using proper variables will also work —
+verify with the actual variable syntax before trusting a curl smoke test.
+
 **A real gotcha hit and fixed here:** `ProductLine` has no `Id` property
 (its stable key is the `Code` enum), so it was left to Mongo's
 auto-assigned `_id`. That broke `productLines` with an opaque "Unexpected

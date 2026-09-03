@@ -110,6 +110,37 @@ public class CatalogQueryTests(MongoDbFixture mongo)
     }
 
     [Fact]
+    public async Task Products_filter_works_as_a_real_graphql_variable_not_just_an_inline_literal()
+    {
+        // Regression test for a real bug: HotChocolate's default naming
+        // convention named the input type "ProductFilterInput", not
+        // "ProductFilter" as Lakbay.Contracts' schema declares. Every
+        // other test in this file passes `filter` as an inline literal
+        // (`products(filter: { productLine: ... })`), which never
+        // exercises GraphQL's variable-type-matching validation — only a
+        // real client sending a `$filter: ProductFilter` variable
+        // (exactly what Lakbay.Web does) hits it. Fixed via
+        // ProductFilterInputType; this test is what would have caught it
+        // before a real client did.
+        var client = CreateClient();
+
+        const string query = "query($filter: ProductFilter) { products(filter: $filter) { name } }";
+        var response = await client.PostAsJsonAsync("/graphql", new
+        {
+            query,
+            variables = new { filter = new { productLine = "ALON" } },
+        });
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.False(body.TryGetProperty("errors", out _), body.ToString());
+        var names = body.GetProperty("data").GetProperty("products")
+            .EnumerateArray()
+            .Select(x => x.GetProperty("name").GetString())
+            .ToList();
+        Assert.Contains("Coron Island Hopping, 3 Days 2 Nights", names);
+    }
+
+    [Fact]
     public async Task Products_filter_excludes_a_product_whose_price_band_is_below_the_floor()
     {
         var client = CreateClient();

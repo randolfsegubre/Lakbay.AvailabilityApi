@@ -22,12 +22,14 @@ and [ADR-0010](../Lakbay.Docs/docs/adr/ADR-0010-last-write-wins-sync.md)
 **Phase 1 is done for the query API**: real `productLines`/`destinations`/
 `products`/`product` resolvers against a live MongoDB, seeded with real
 Philippine destinations and products (Coron, Baguio, San Fernando
-Pampanga, Vigan — one per product line), 7 passing tests against a real
-Testcontainers-managed database. `Lakbay.AvailabilityApi.Sync` still has
-no functions defined — that's correct until Phase 4. See
+Pampanga, Vigan — one per product line), 8 passing tests against a real
+Testcontainers-managed database — including a regression test for a real
+bug (`ProductFilterInput` vs. `ProductFilter` naming) that only a proper
+GraphQL client caught, not `curl` with inline literals. `Lakbay.Web`'s
+real Phase 2 catalog pages now query this API live. `Lakbay.AvailabilityApi.Sync`
+still has no functions defined — that's correct until Phase 4. See
 [Docs/DEVELOPER_HANDBOOK.md](Docs/DEVELOPER_HANDBOOK.md) for proven local
-setup (including a real gotcha hit and fixed along the way), and
+setup (including both real gotchas hit and fixed along the way), and
 [CLAUDE.md](CLAUDE.md) /
 [../Lakbay.Docs/docs/02_BUILD_PLAN.md](../Lakbay.Docs/docs/02_BUILD_PLAN.md)
-for what's next (Phase 2 — `Lakbay.Web` building its catalog UI against
-this).
+for what's next.

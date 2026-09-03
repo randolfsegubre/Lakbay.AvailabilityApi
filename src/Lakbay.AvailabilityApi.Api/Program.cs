@@ -20,7 +20,8 @@ builder.Services.AddSingleton<CatalogContext>();
 
 builder.Services
     .AddGraphQLServer()
-    .AddQueryType<Query>();
+    .AddQueryType<Query>()
+    .AddType<ProductFilterInputType>();
 
 // Lakbay.Web calls this API cross-origin (localhost:3000 -> localhost:5000
 // in dev; different subdomains/hosts in every real environment). The
