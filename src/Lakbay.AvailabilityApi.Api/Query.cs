@@ -1,3 +1,4 @@
+using Lakbay.AvailabilityApi.Shared;
 using Lakbay.Contracts;
 using HotChocolate;
 using MongoDB.Driver;
@@ -24,6 +25,24 @@ public class Query
         CancellationToken ct)
         => await catalog.ProductLines.Find(FilterDefinition<ProductLine>.Empty).ToListAsync(ct);
 
+    /// <summary>Singular — one shared Country node today (ADR-0017).</summary>
+    public async Task<Country?> GetCountry(
+        [Service] CatalogContext catalog,
+        CancellationToken ct)
+        => await catalog.Countries.Find(FilterDefinition<Country>.Empty).FirstOrDefaultAsync(ct);
+
+    public async Task<List<Region>> GetRegions(
+        ProductLineCode? productLine,
+        [Service] CatalogContext catalog,
+        CancellationToken ct)
+    {
+        var filter = productLine is { } code
+            ? Builders<Region>.Filter.Eq(r => r.ProductLine, code)
+            : FilterDefinition<Region>.Empty;
+
+        return await catalog.Regions.Find(filter).ToListAsync(ct);
+    }
+
     public async Task<List<Destination>> GetDestinations(
         ProductLineCode? productLine,
         [Service] CatalogContext catalog,
@@ -47,6 +66,50 @@ public class Query
         [Service] CatalogContext catalog,
         CancellationToken ct)
         => await catalog.Products.Find(p => p.Slug == slug).FirstOrDefaultAsync(ct);
+
+    /// <summary>Cross-destination hotel search (ADR-0019) — the Stays page's main query.</summary>
+    public async Task<List<Accommodation>> GetAccommodations(
+        string? destinationId,
+        string? tag,
+        [Service] CatalogContext catalog,
+        CancellationToken ct)
+    {
+        var f = Builders<Accommodation>.Filter;
+        var clauses = new List<FilterDefinition<Accommodation>>();
+
+        if (destinationId is not null)
+        {
+            clauses.Add(f.Eq(a => a.Destination.Id, destinationId));
+        }
+
+        if (tag is not null)
+        {
+            clauses.Add(f.AnyEq(a => a.Tags, tag));
+        }
+
+        var filter = clauses.Count == 0 ? f.Empty : f.And(clauses);
+        return await catalog.Accommodations.Find(filter).ToListAsync(ct);
+    }
+
+    /// <summary>A real "pick your room" list for one Accommodation (ADR-0019). RoomType carries a plain AccommodationId — see RoomType.cs.</summary>
+    public async Task<List<RoomType>> GetRoomTypes(
+        string accommodationId,
+        [Service] CatalogContext catalog,
+        CancellationToken ct)
+        => await catalog.RoomTypes.Find(r => r.AccommodationId == accommodationId).ToListAsync(ct);
+
+    /// <summary>Fair-price local activities marketplace (ADR-0020), independent of any Product package.</summary>
+    public async Task<List<Activity>> GetActivities(
+        string? destinationId,
+        [Service] CatalogContext catalog,
+        CancellationToken ct)
+    {
+        var filter = destinationId is not null
+            ? Builders<Activity>.Filter.Eq(a => a.Destination.Id, destinationId)
+            : FilterDefinition<Activity>.Empty;
+
+        return await catalog.Activities.Find(filter).ToListAsync(ct);
+    }
 
     /// <summary>
     /// Translates ProductFilter (Lakbay.Contracts' explicit input type —

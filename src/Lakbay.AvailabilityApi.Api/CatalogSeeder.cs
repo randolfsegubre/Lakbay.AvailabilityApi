@@ -1,3 +1,4 @@
+using Lakbay.AvailabilityApi.Shared;
 using Lakbay.Contracts;
 using MongoDB.Driver;
 
@@ -30,7 +31,7 @@ public static class CatalogSeeder
             new ProductLine
             {
                 Code = ProductLineCode.Alon,
-                Name = "Alon",
+                Name = "Islands",
                 Tagline = "Islands & water adventure",
                 Countries = ["PH"],
                 SourceUpdatedUtc = now,
@@ -38,7 +39,7 @@ public static class CatalogSeeder
             new ProductLine
             {
                 Code = ProductLineCode.Amihan,
-                Name = "Amihan",
+                Name = "Highlands",
                 Tagline = "Highland & cool-climate escapes",
                 Countries = ["PH"],
                 SourceUpdatedUtc = now,
@@ -46,7 +47,7 @@ public static class CatalogSeeder
             new ProductLine
             {
                 Code = ProductLineCode.Parul,
-                Name = "Parul",
+                Name = "Festivals",
                 Tagline = "Festive & light tourism",
                 Countries = ["PH"],
                 SourceUpdatedUtc = now,
@@ -54,7 +55,7 @@ public static class CatalogSeeder
             new ProductLine
             {
                 Code = ProductLineCode.Pamana,
-                Name = "Pamana",
+                Name = "Heritage",
                 Tagline = "Heritage & culture",
                 Countries = ["PH"],
                 SourceUpdatedUtc = now,
@@ -62,12 +63,74 @@ public static class CatalogSeeder
         };
         await catalog.ProductLines.InsertManyAsync(productLines, cancellationToken: ct);
 
+        // ADR-0017: Country/Region are real entities now, not flat
+        // strings — a single shared Country (Lakbay is one country
+        // today) plus one Region per ProductLine, matching the real
+        // Cms seeder's shape so this test fixture stays honest.
+        var country = new Country
+        {
+            Id = "country-ph",
+            Name = "Philippines",
+            Code = "PH",
+            Description = "An archipelago of over 7,000 islands in Southeast Asia.",
+            Highlights = ["Tropical climate year-round", "English widely spoken", "Currency: Philippine Peso (PHP)"],
+            SourceUpdatedUtc = now,
+        };
+        await catalog.Countries.InsertOneAsync(country, cancellationToken: ct);
+
+        var palawan = new Region
+        {
+            Id = "region-palawan",
+            Name = "Palawan",
+            Slug = "palawan",
+            Country = country,
+            ProductLine = ProductLineCode.Alon,
+            Description = "The Philippines' last ecological frontier.",
+            Highlights = ["Regularly ranked among the world's best islands"],
+            SourceUpdatedUtc = now,
+        };
+        var cordilleraAmihan = new Region
+        {
+            Id = "region-cordillera-amihan",
+            Name = "Cordillera Administrative Region",
+            Slug = "cordillera-amihan",
+            Country = country,
+            ProductLine = ProductLineCode.Amihan,
+            Description = "A mountainous region in northern Luzon.",
+            Highlights = ["Several degrees cooler than the lowlands year-round"],
+            SourceUpdatedUtc = now,
+        };
+        var centralLuzon = new Region
+        {
+            Id = "region-central-luzon",
+            Name = "Central Luzon",
+            Slug = "central-luzon",
+            Country = country,
+            ProductLine = ProductLineCode.Parul,
+            Description = "Home to the Giant Lantern Festival.",
+            Highlights = ["San Fernando is the Christmas Capital of the Philippines"],
+            SourceUpdatedUtc = now,
+        };
+        var ilocosPamana = new Region
+        {
+            Id = "region-ilocos-pamana",
+            Name = "Ilocos Region",
+            Slug = "ilocos-pamana",
+            Country = country,
+            ProductLine = ProductLineCode.Pamana,
+            Description = "The Philippines' best-preserved Spanish colonial town.",
+            Highlights = ["A UNESCO World Heritage Site"],
+            SourceUpdatedUtc = now,
+        };
+        await catalog.Regions.InsertManyAsync([palawan, cordilleraAmihan, centralLuzon, ilocosPamana], cancellationToken: ct);
+
         var coron = new Destination
         {
             Id = "dest-coron",
             Name = "Coron, Palawan",
+            Slug = "coron",
             Country = "PH",
-            Region = "Palawan",
+            Region = palawan,
             ProductLine = ProductLineCode.Alon,
             Description = "Island-hopping among limestone karsts, WWII wreck diving, and the Big and Small Lagoons.",
             Latitude = 11.9973,
@@ -78,8 +141,9 @@ public static class CatalogSeeder
         {
             Id = "dest-baguio",
             Name = "Baguio",
+            Slug = "baguio",
             Country = "PH",
-            Region = "Cordillera Administrative Region",
+            Region = cordilleraAmihan,
             ProductLine = ProductLineCode.Amihan,
             Description = "The Philippines' Summer Capital — pine forests and cool air at 1,540m, without leaving the tropics.",
             Latitude = 16.4023,
@@ -90,8 +154,9 @@ public static class CatalogSeeder
         {
             Id = "dest-san-fernando-pampanga",
             Name = "San Fernando, Pampanga",
+            Slug = "san-fernando-pampanga",
             Country = "PH",
-            Region = "Central Luzon",
+            Region = centralLuzon,
             ProductLine = ProductLineCode.Parul,
             Description = "The Christmas Capital of the Philippines — home of the Giant Lantern Festival.",
             Latitude = 15.0286,
@@ -102,8 +167,9 @@ public static class CatalogSeeder
         {
             Id = "dest-vigan",
             Name = "Vigan",
+            Slug = "vigan",
             Country = "PH",
-            Region = "Ilocos Sur",
+            Region = ilocosPamana,
             ProductLine = ProductLineCode.Pamana,
             Description = "A UNESCO World Heritage colonial-era town of cobblestone streets and preserved Spanish-era houses.",
             Latitude = 17.5747,
@@ -112,6 +178,57 @@ public static class CatalogSeeder
         };
 
         await catalog.Destinations.InsertManyAsync([coron, baguio, pampanga, vigan], cancellationToken: ct);
+
+        // ADR-0017: Accommodation is a real entity now, not two flat
+        // strings on Product.
+        var coronBaysideInn = new Accommodation
+        {
+            Id = "accom-coron-bayside-inn",
+            Name = "Coron Bayside Inn",
+            Description = "A simple harborside inn a five-minute walk from the public market and the town's island-hopping jetty.",
+            Highlights = ["Walking distance to the town's main strip of dive shops and restaurants"],
+            Destination = coron,
+            Type = AccommodationType.PensionHouse,
+            Tags = ["Budget-Friendly", "Convenient Location"],
+            SourceUpdatedUtc = now,
+        };
+        var sessionRoadPineHouse = new Accommodation
+        {
+            Id = "accom-session-road-pine-house",
+            Name = "Session Road Pine House",
+            Description = "A short tricycle ride from Burnham Park, with a fireplace lounge for Baguio's cool evenings.",
+            Highlights = ["Fireplace lounge open to guests on cool Baguio evenings"],
+            Destination = baguio,
+            Type = AccommodationType.Apartel,
+            Tags = ["Family-Friendly", "Cozy"],
+            OfficialRating = 3.0,
+            SourceUpdatedUtc = now,
+        };
+        var lanternCityHomestay = new Accommodation
+        {
+            Id = "accom-lantern-city-homestay",
+            Name = "Lantern City Homestay",
+            Description = "A homestay in San Fernando's lantern-making district, footsteps from the festival grounds.",
+            Highlights = ["Run by a local family in San Fernando's lantern-making district"],
+            Destination = pampanga,
+            Type = AccommodationType.Homestay,
+            Tags = ["Homestay", "Budget-Friendly"],
+            SourceUpdatedUtc = now,
+        };
+        var calleCrisologoHeritageHouse = new Accommodation
+        {
+            Id = "accom-calle-crisologo-heritage-house",
+            Name = "Calle Crisologo Heritage House",
+            Description = "A restored ancestral house on Calle Crisologo's cobblestone strip, steps from the kalesa stand.",
+            Highlights = ["A genuinely restored 19th-century ancestral house, not a modern replica"],
+            Destination = vigan,
+            Type = AccommodationType.VacationRental,
+            Tags = ["Heritage Stay", "Boutique"],
+            OfficialRating = 3.5,
+            SourceUpdatedUtc = now,
+        };
+        await catalog.Accommodations.InsertManyAsync(
+            [coronBaysideInn, sessionRoadPineHouse, lanternCityHomestay, calleCrisologoHeritageHouse], cancellationToken: ct);
 
         var products = new[]
         {
@@ -136,6 +253,10 @@ public static class CatalogSeeder
                     },
                 ],
                 AvailableCount = 8,
+                Accommodation = coronBaysideInn,
+                IncludedActivities = ["Big Lagoon and Kayangan Lake island-hopping boat tour", "Skeleton Wreck snorkeling stop"],
+                OptionalActivities = ["Twin-tank wreck diving for certified divers"],
+                HeroImageUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Kayangan%20Lake%2C%20Coron%20-%20Palawan.jpg",
                 SourceUpdatedUtc = now,
             },
             new Product
@@ -159,6 +280,10 @@ public static class CatalogSeeder
                     },
                 ],
                 AvailableCount = 15,
+                Accommodation = sessionRoadPineHouse,
+                IncludedActivities = ["Guided Burnham Park & Session Road walking tour", "Mines View Park sunrise viewing"],
+                OptionalActivities = ["Strawberry picking day trip to La Trinidad"],
+                HeroImageUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Baguio%20City%2C%20Philippines(landscape%20view).jpg",
                 SourceUpdatedUtc = now,
             },
             new Product
@@ -182,6 +307,10 @@ public static class CatalogSeeder
                     },
                 ],
                 AvailableCount = 30,
+                Accommodation = lanternCityHomestay,
+                IncludedActivities = ["Guided Giant Lantern Festival viewing", "Lantern-making workshop visit"],
+                OptionalActivities = ["Pampanga culinary trail (sisig, Susie's cuisine)"],
+                HeroImageUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/WV%20banner%20San%20Fernando%20Pampanga%20giant%20Christmas%20lanterns.JPG",
                 SourceUpdatedUtc = now,
             },
             new Product
@@ -205,6 +334,10 @@ public static class CatalogSeeder
                     },
                 ],
                 AvailableCount = 10,
+                Accommodation = calleCrisologoHeritageHouse,
+                IncludedActivities = ["Kalesa (horse-cart) heritage tour", "Bantay Bell Tower visit"],
+                OptionalActivities = ["Longganisa & bagnet cooking class"],
+                HeroImageUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/The%20Calle%20Crisologo%20in%20Vigan%2C%20Ilocos%20Sur.jpg",
                 SourceUpdatedUtc = now,
             },
         };

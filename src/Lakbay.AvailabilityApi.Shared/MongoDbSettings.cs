@@ -1,4 +1,4 @@
-namespace Lakbay.AvailabilityApi.Api;
+namespace Lakbay.AvailabilityApi.Shared;
 
 /// <summary>Bound from the "Mongo" configuration section.</summary>
 public sealed class MongoDbSettings

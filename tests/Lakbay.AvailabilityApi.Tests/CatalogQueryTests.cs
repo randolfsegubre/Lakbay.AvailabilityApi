@@ -1,5 +1,7 @@
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 namespace Lakbay.AvailabilityApi.Tests;
@@ -14,16 +16,42 @@ namespace Lakbay.AvailabilityApi.Tests;
 [Collection("Mongo")]
 public class CatalogQueryTests(MongoDbFixture mongo)
 {
-    private HttpClient CreateClient([CallerMemberName] string testName = "")
+    private async Task<HttpClient> CreateClientAsync([CallerMemberName] string testName = "")
     {
-        var factory = new AvailabilityApiFactory(mongo.ConnectionString, $"lakbay_test_{testName}".ToLowerInvariant());
+        var factory = new AvailabilityApiFactory(mongo.ConnectionString, DatabaseNameFor(testName));
+        await factory.SeedCatalogAsync();
         return factory.CreateClient();
+    }
+
+    /// <summary>
+    /// MongoDB caps database names at 63 characters — a real, previously-
+    /// invisible bug found the moment test isolation actually started
+    /// working (a prior Program.cs bug meant every test silently shared
+    /// one real database, so this length was never actually exercised).
+    /// Long test method names get truncated with an 8-char hash suffix
+    /// for uniqueness rather than shortened arbitrarily, so two long
+    /// names that happen to share a prefix still can't collide.
+    /// </summary>
+    private static string DatabaseNameFor(string testName)
+    {
+        const string prefix = "lakbay_test_";
+        const int maxNameLength = 63;
+        var name = (prefix + testName).ToLowerInvariant();
+
+        if (name.Length <= maxNameLength)
+        {
+            return name;
+        }
+
+        var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(testName)))[..8];
+        var truncatedTestName = testName[..(maxNameLength - prefix.Length - hash.Length - 1)];
+        return $"{prefix}{truncatedTestName}_{hash}".ToLowerInvariant();
     }
 
     [Fact]
     public async Task ProductLines_returns_all_four_seeded_lines()
     {
-        var client = CreateClient();
+        var client = await CreateClientAsync();
 
         var response = await client.PostAsJsonAsync("/graphql", new { query = "{ productLines { code } }" });
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -43,7 +71,7 @@ public class CatalogQueryTests(MongoDbFixture mongo)
     [Fact]
     public async Task Product_by_slug_returns_the_real_seeded_product()
     {
-        var client = CreateClient();
+        var client = await CreateClientAsync();
 
         var response = await client.PostAsJsonAsync("/graphql", new
         {
@@ -59,7 +87,7 @@ public class CatalogQueryTests(MongoDbFixture mongo)
     [Fact]
     public async Task Product_by_unknown_slug_returns_null_not_an_error()
     {
-        var client = CreateClient();
+        var client = await CreateClientAsync();
 
         var response = await client.PostAsJsonAsync("/graphql", new
         {
@@ -74,7 +102,7 @@ public class CatalogQueryTests(MongoDbFixture mongo)
     [Fact]
     public async Task Destinations_filter_by_product_line()
     {
-        var client = CreateClient();
+        var client = await CreateClientAsync();
 
         var response = await client.PostAsJsonAsync("/graphql", new
         {
@@ -93,7 +121,7 @@ public class CatalogQueryTests(MongoDbFixture mongo)
     [Fact]
     public async Task Products_filter_combines_product_line_and_min_price_correctly()
     {
-        var client = CreateClient();
+        var client = await CreateClientAsync();
 
         var response = await client.PostAsJsonAsync("/graphql", new
         {
@@ -122,7 +150,7 @@ public class CatalogQueryTests(MongoDbFixture mongo)
         // (exactly what Lakbay.Web does) hits it. Fixed via
         // ProductFilterInputType; this test is what would have caught it
         // before a real client did.
-        var client = CreateClient();
+        var client = await CreateClientAsync();
 
         const string query = "query($filter: ProductFilter) { products(filter: $filter) { name } }";
         var response = await client.PostAsJsonAsync("/graphql", new
@@ -143,7 +171,7 @@ public class CatalogQueryTests(MongoDbFixture mongo)
     [Fact]
     public async Task Products_filter_excludes_a_product_whose_price_band_is_below_the_floor()
     {
-        var client = CreateClient();
+        var client = await CreateClientAsync();
 
         // Giant Lantern Festival Day Trip is PHP 2,200 — below a 5,000 floor.
         var response = await client.PostAsJsonAsync("/graphql", new
