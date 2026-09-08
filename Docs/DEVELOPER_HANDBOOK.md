@@ -104,18 +104,20 @@ to `["http://localhost:3000"]`. Run with `ASPNETCORE_ENVIRONMENT=Development`
 `--no-launch-profile`) or that config won't load and the browser preflight
 will 404.
 
-`Lakbay.AvailabilityApi.Sync` still builds but has no functions defined —
-correct as of Phase 1; it starts doing real work in Phase 4.
+`Lakbay.AvailabilityApi.Sync` has a real function since Phase 4 —
+`CatalogSyncFunction` (`[ServiceBusTrigger("lakbay-catalog-sync", ...)]`),
+consuming `Lakbay.Cms`'s publish-sync events. Run it locally with
+`func start` (from `src/Lakbay.AvailabilityApi.Sync`) against the Azure
+Service Bus emulator (`docker compose up -d` in this repo also brings up
+`servicebus-emulator` + its `sqledge` companion, not just MongoDB) —
+verified live 2026-09-09, listed as `CatalogSyncFunction: serviceBusTrigger`
+on startup.
 
 ## What's genuinely still blocked on external tooling
 
-- **Azure Functions Core Tools** (`func` CLI, for running/debugging
-  `Lakbay.AvailabilityApi.Sync` locally): not installed on this machine.
-  `dotnet build` doesn't need it; actually running the Function locally
-  does. Install via `npm install -g azure-functions-core-tools@4
-  --unsafe-perm true` when Phase 4 starts.
-- **A real Service Bus emulator or namespace** (Phase 4): the Azure
-  Service Bus emulator can run in Docker for fully offline local dev.
+Nothing, as of 2026-09-09 — Azure Functions Core Tools (`func` CLI) and the
+Azure Service Bus emulator (Docker) are both installed/configured and
+proven working locally.
 
 ## Adding a new query field — worked walkthrough
 
