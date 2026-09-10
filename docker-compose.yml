@@ -1,0 +1,56 @@
+services:
+  # MongoDB for local dev (Phase 1). No auth — this is a local-only,
+  # no-secret-to-protect setup, unlike Lakbay.Cms's SQL Server compose
+  # (which has a real SA password and therefore uses .env + user-secrets).
+  # The app itself never runs in this compose file, same as every other
+  # compose file in this platform — native `dotnet run` for fast hot
+  # reload, this container is the database only.
+  mongo:
+    image: mongo:8
+    container_name: lakbay_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - lakbay_mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # Azure Service Bus Emulator (Phase 3, ADR-0013) — local stand-in for the
+  # queue Lakbay.Cms publishes to and Lakbay.AvailabilityApi.Sync consumes
+  # from. Requires the sqledge companion below; the emulator itself has no
+  # real Azure dependency and needs no account. Topology (queue names) is
+  # defined in servicebus-emulator-config.json, not created dynamically.
+  servicebus-emulator:
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    container_name: lakbay_servicebus
+    pull_policy: always
+    volumes:
+      - ./servicebus-emulator-config.json:/ServiceBus_Emulator/ConfigFiles/Config.json
+    ports:
+      - "5672:5672"
+      - "5300:5300"
+    environment:
+      SQL_SERVER: sqledge
+      MSSQL_SA_PASSWORD: ${DB_PASSWORD}
+      ACCEPT_EULA: "Y"
+    depends_on:
+      - sqledge
+
+  # Required by servicebus-emulator — it stores its own state here, not
+  # part of Lakbay's own data. No exposed port needed outside the compose
+  # network. Same SA-password convention as Lakbay.Cms's SQL Server (.env,
+  # gitignored) even though nothing here is Lakbay's own data, so a stray
+  # `docker compose up` in this repo never has a hardcoded secret to leak.
+  sqledge:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: lakbay_servicebus_sqledge
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${DB_PASSWORD}
+
+volumes:
+  lakbay_mongo_data:

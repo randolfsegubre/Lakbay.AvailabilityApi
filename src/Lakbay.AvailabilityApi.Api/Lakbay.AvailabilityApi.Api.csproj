@@ -8,10 +8,16 @@
 
   <ItemGroup>
     <PackageReference Include="HotChocolate.AspNetCore" Version="16.6.3" />
+    <PackageReference Include="MongoDB.Driver" Version="3.11.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Lakbay.Contracts\csharp\Lakbay.Contracts.csproj" />
+    <!-- ADR-0009/ADR-0013: Mongo access layer (CatalogContext,
+         MongoClassMaps, MongoDbSettings) moved out to Shared so this
+         project and Lakbay.AvailabilityApi.Sync use one copy, not two
+         that can drift. -->
+    <ProjectReference Include="..\Lakbay.AvailabilityApi.Shared\Lakbay.AvailabilityApi.Shared.csproj" />
   </ItemGroup>
 
 </Project>

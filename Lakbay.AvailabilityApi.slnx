@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Lakbay.AvailabilityApi.Api/Lakbay.AvailabilityApi.Api.csproj" />
     <Project Path="src/Lakbay.AvailabilityApi.Sync/Lakbay.AvailabilityApi.Sync.csproj" />
+    <Project Path="src/Lakbay.AvailabilityApi.Shared/Lakbay.AvailabilityApi.Shared.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Lakbay.AvailabilityApi.Tests/Lakbay.AvailabilityApi.Tests.csproj" />

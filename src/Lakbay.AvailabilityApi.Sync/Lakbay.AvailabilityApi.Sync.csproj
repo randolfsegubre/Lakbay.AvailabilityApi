@@ -20,6 +20,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Lakbay.Contracts\csharp\Lakbay.Contracts.csproj" />
+    <!-- ADR-0013: this function writes synced catalog data straight to the
+         same MongoDB the query API reads from (ADR-0009) — never through
+         the query API itself. Shared gives it CatalogContext and the
+         MongoDB.Driver package reference transitively. -->
+    <ProjectReference Include="..\Lakbay.AvailabilityApi.Shared\Lakbay.AvailabilityApi.Shared.csproj" />
   </ItemGroup>
 
 </Project>
