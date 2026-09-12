@@ -19,17 +19,28 @@ sync/write load. See
 and [ADR-0010](../Lakbay.Docs/docs/adr/ADR-0010-last-write-wins-sync.md)
 (last-write-wins ordering for the sync side).
 
-**Phase 1 is done for the query API**: real `productLines`/`destinations`/
-`products`/`product` resolvers against a live MongoDB, seeded with real
-Philippine destinations and products (Coron, Baguio, San Fernando
-Pampanga, Vigan — one per product line), 8 passing tests against a real
-Testcontainers-managed database — including a regression test for a real
-bug (`ProductFilterInput` vs. `ProductFilter` naming) that only a proper
-GraphQL client caught, not `curl` with inline literals. `Lakbay.Web`'s
-real Phase 2 catalog pages now query this API live. `Lakbay.AvailabilityApi.Sync`
-still has no functions defined — that's correct until Phase 4. See
-[Docs/DEVELOPER_HANDBOOK.md](Docs/DEVELOPER_HANDBOOK.md) for proven local
-setup (including both real gotchas hit and fixed along the way), and
-[CLAUDE.md](CLAUDE.md) /
+Both deployables are now real and running: the query API serves
+`productLines`/`destinations`/`products`/`accommodations`/`activities`
+resolvers against a live MongoDB synced from the real 14-product
+`Lakbay.Cms` catalog, and `Lakbay.AvailabilityApi.Sync`'s
+`[ServiceBusTrigger]` function is live, consuming real Cms publish events.
+See [Docs/DEVELOPER_HANDBOOK.md](Docs/DEVELOPER_HANDBOOK.md) for proven
+local setup, and [CLAUDE.md](CLAUDE.md) /
 [../Lakbay.Docs/docs/02_BUILD_PLAN.md](../Lakbay.Docs/docs/02_BUILD_PLAN.md)
-for what's next.
+for full phase status.
+
+## E2E testing
+
+Verified live 2026-09-12 against the full pipeline (`Lakbay.Cms` → Service
+Bus → `Sync` → MongoDB → this API): `Sync` started clean against the real
+Service Bus emulator, and the GraphQL API returned all 14 real products
+with correct names/slugs — confirming the whole chain is intact, not just
+this repo in isolation. `availableCount: 0`/`isSoldOut: true` on every real
+product is expected, not a bug: `Lakbay.Booking`'s own availability field
+(ADR-0014) was only ever populated for its own small demo dataset, since
+real online checkout was never built (ADR-0026 stubs `IPaymentGateway`).
+Also exercised live by `Lakbay.AgentOps`'s offer-aggregation endpoint,
+which queries three separate collections here (accommodations/products/
+activities) in one call. Full trail:
+[`../Lakbay.Docs/docs/05_DEVLOG.md`](../Lakbay.Docs/docs/05_DEVLOG.md)'s
+2026-09-12 entry.
